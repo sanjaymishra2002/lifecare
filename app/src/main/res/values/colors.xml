@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="black">#FF000000</color>
+
+    <color name="green">#0a9a73</color>
+    <color name="orange">#FF9800</color>
+    <color name="bottom_nav_icon_color">@color/white</color>
+    <color name="bottom_nav_text_color">@color/white</color>
+    <color name="white">#FFFFFF</color>
+    <color name="transparent">#00000000</color>
+
+</resources>
