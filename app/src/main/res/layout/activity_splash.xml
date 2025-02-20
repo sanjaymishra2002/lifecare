@@ -12,7 +12,7 @@
         android:id="@+id/splash_logo"
         android:layout_width="200dp"
         android:layout_height="200dp"
-        android:layout_marginEnd="12dp"
+
         android:contentDescription="Life Care Logo"
         android:src="@drawable/starter_logo" />
 

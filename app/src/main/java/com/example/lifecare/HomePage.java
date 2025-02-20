@@ -215,8 +215,10 @@ public class HomePage extends AppCompatActivity {
                 public void onAvailable(android.net.Network network) {
                     runOnUiThread(() -> {
                         dismissNoInternetSnackbar();
-                        if (webView.getUrl().equals("about:blank")) {
-                            webView.reload();
+                        if (webView.getUrl() == null || webView.getUrl().equals("about:blank")) {
+                            webView.loadUrl(HOME_URL); // Load the home page if blank
+                        } else {
+                            webView.reload(); // Otherwise, just reload the current page
                         }
                     });
                 }
@@ -228,4 +230,5 @@ public class HomePage extends AppCompatActivity {
             });
         }
     }
+
 }

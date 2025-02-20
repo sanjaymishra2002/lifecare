@@ -9,7 +9,7 @@
 
     <item
         android:id="@+id/nav_prescription"
-        android:icon="@drawable/ic_prescription"
+        android:icon="@drawable/prescription"
         android:title="Prescription"/>
 
     <item
@@ -19,7 +19,7 @@
 
     <item
         android:id="@+id/nav_wishlist"
-        android:icon="@drawable/ic_wishlist"
+        android:icon="@drawable/wishlist"
         android:title="Wishlist"/>
 
     <item

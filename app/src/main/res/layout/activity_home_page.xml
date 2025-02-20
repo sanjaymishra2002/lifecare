@@ -18,7 +18,7 @@
         app:menu="@menu/bottom_menu"
         app:itemIconTint="@color/black"
         app:itemTextColor="@color/black"
-        app:labelVisibilityMode="labeled"/>
+      />
 
     <!-- SwipeRefreshLayout wrapping WebView -->
     <androidx.swiperefreshlayout.widget.SwipeRefreshLayout
