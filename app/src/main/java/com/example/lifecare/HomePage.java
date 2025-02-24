@@ -41,7 +41,7 @@ public class HomePage extends AppCompatActivity {
     private static final String HOME = "https://lifecare-medicalstore.in";
     private static final String WISHLIST_URL = "https://lifecare-medicalstore.in/wishlist.php";
     private static final String ACCOUNT_URL = "https://lifecare-medicalstore.in/account.php";
-    private static final String SEARCH_URL = "https://lifecare-medicalstore.in/search.php";
+    private static final String SEARCH_URL = "https://lifecare-medicalstore.in/searchi.php";
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -59,16 +59,14 @@ public class HomePage extends AppCompatActivity {
         webSettings.setAllowFileAccess(true);
         webSettings.setAllowContentAccess(true);
         webSettings.setDomStorageEnabled(true);
+        webSettings.setSupportMultipleWindows(true);
         webSettings.setMixedContentMode(WebSettings.MIXED_CONTENT_ALWAYS_ALLOW);
 
         // Custom WebViewClient
         webView.setWebViewClient(new WebViewClient() {
-
-
             @Override
             public boolean shouldOverrideUrlLoading(WebView view, WebResourceRequest request) {
                 Uri uri = request.getUrl();
-
                 if (uri.toString().startsWith("lifecare://")) {
                     Intent intent = new Intent(Intent.ACTION_VIEW, uri);
                     startActivity(intent);
@@ -83,21 +81,40 @@ public class HomePage extends AppCompatActivity {
                 checkInternetConnection(); // Check internet when page loads
                 toggleUIElements(url); // Hide/show UI elements based on URL
             }
+
+            @Override
+            public void onReceivedError(WebView view, int errorCode, String description, String failingUrl) {
+                // Save the last failed URL
+                lastFailedUrl = failingUrl;
+                view.loadUrl("about:blank"); // Show blank page
+                showNoInternetSnackbar();
+            }
         });
+
 
         webView.setWebChromeClient(new WebChromeClient() {
             @Override
             public boolean onShowFileChooser(WebView webView, ValueCallback<Uri[]> filePathCallback, FileChooserParams fileChooserParams) {
+                if (fileChooserCallback != null) {
+                    fileChooserCallback.onReceiveValue(null);
+                }
                 fileChooserCallback = filePathCallback;
 
-                Intent intent = new Intent(Intent.ACTION_GET_CONTENT);
-                intent.setType("image/*");
-                intent.putExtra(Intent.EXTRA_ALLOW_MULTIPLE, true);
-                intent.addCategory(Intent.CATEGORY_OPENABLE);
+                Intent contentSelectionIntent = new Intent(Intent.ACTION_GET_CONTENT);
+                contentSelectionIntent.addCategory(Intent.CATEGORY_OPENABLE);
+                contentSelectionIntent.setType("*/*"); // Supports all file types
 
-                startActivityForResult(Intent.createChooser(intent, "Select Images"), FILE_CHOOSER_REQUEST_CODE);
+                Intent[] intentArray;
+                intentArray = new Intent[]{};
+
+                Intent chooserIntent = new Intent(Intent.ACTION_CHOOSER);
+                chooserIntent.putExtra(Intent.EXTRA_INTENT, contentSelectionIntent);
+                chooserIntent.putExtra(Intent.EXTRA_TITLE, "Select File");
+
+                startActivityForResult(chooserIntent, FILE_CHOOSER_REQUEST_CODE);
                 return true;
             }
+
         });
 
         // Handle bottom navigation menu clicks
@@ -207,6 +224,8 @@ public class HomePage extends AppCompatActivity {
     }
 
     // Monitor network changes in real-time
+    private String lastFailedUrl = null; // Store the last failed URL
+
     private void monitorNetworkChanges() {
         ConnectivityManager cm = (ConnectivityManager) getSystemService(Context.CONNECTIVITY_SERVICE);
         if (cm != null) {
@@ -216,9 +235,14 @@ public class HomePage extends AppCompatActivity {
                     runOnUiThread(() -> {
                         dismissNoInternetSnackbar();
                         if (webView.getUrl() == null || webView.getUrl().equals("about:blank")) {
-                            webView.loadUrl(HOME_URL); // Load the home page if blank
+                            if (lastFailedUrl != null) {
+                                webView.loadUrl(lastFailedUrl); // Reload last failed URL
+                                lastFailedUrl = null; // Reset after reload
+                            } else {
+                                webView.loadUrl(HOME_URL); // Load home if no previous URL
+                            }
                         } else {
-                            webView.reload(); // Otherwise, just reload the current page
+                            webView.reload(); // Reload the current page
                         }
                     });
                 }
@@ -230,5 +254,29 @@ public class HomePage extends AppCompatActivity {
             });
         }
     }
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, @Nullable Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
+        if (requestCode == FILE_CHOOSER_REQUEST_CODE) {
+            if (fileChooserCallback == null) return;
+
+            Uri[] results = null;
+            if (resultCode == Activity.RESULT_OK && data != null) {
+                if (data.getData() != null) {
+                    results = new Uri[]{data.getData()};
+                } else if (data.getClipData() != null) {
+                    int count = data.getClipData().getItemCount();
+                    results = new Uri[count];
+                    for (int i = 0; i < count; i++) {
+                        results[i] = data.getClipData().getItemAt(i).getUri();
+                    }
+                }
+            }
+            fileChooserCallback.onReceiveValue(results);
+            fileChooserCallback = null;
+        }
+    }
+
+
 
 }
