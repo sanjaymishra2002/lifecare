@@ -1,0 +1,70 @@
+name: Deploy on Push
+
+on:
+  push:
+    branches:
+      - main
+      - master
+  pull_request:
+    branches:
+      - main
+      - master
+
+jobs:
+  notify-deployment:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        
+      - name: Send webhook notification
+        if: github.event_name == 'push'
+        run: |
+          echo "Code has been pushed to repository"
+          echo "Branch: ${{ github.ref_name }}"
+          echo "Commit: ${{ github.sha }}"
+          echo "This workflow can trigger webhooks to deploy to your server"
+          
+      - name: Webhook deployment (Optional)
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        run: |
+          # Uncomment and configure the following lines to send a webhook to your server
+          # Replace YOUR_WEBHOOK_URL with your actual webhook endpoint
+          # curl -X POST "YOUR_WEBHOOK_URL" \
+          #   -H "Content-Type: application/json" \
+          #   -d '{
+          #     "repository": "${{ github.repository }}",
+          #     "branch": "${{ github.ref_name }}",
+          #     "commit": "${{ github.sha }}",
+          #     "pusher": "${{ github.actor }}",
+          #     "message": "${{ github.event.head_commit.message }}"
+          #   }'
+          echo "Webhook notification would be sent here"
+          echo "Configure your webhook URL in this step to enable automatic deployment"
+
+  build-android:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+          
+      - name: Grant execute permission for gradlew
+        run: chmod +x gradlew
+        
+      - name: Build with Gradle
+        run: ./gradlew build --no-daemon
+        
+      - name: Upload APK
+        if: github.event_name == 'push'
+        uses: actions/upload-artifact@v4
+        with:
+          name: app-release
+          path: app/build/outputs/apk/**/*.apk
