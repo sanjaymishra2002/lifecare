@@ -67,12 +67,15 @@ Your server needs to:
 ```javascript
 const express = require('express');
 const crypto = require('crypto');
-const { exec } = require('child_process');
+const { spawn } = require('child_process');
+const path = require('path');
 
 const app = express();
 app.use(express.json());
 
 const WEBHOOK_SECRET = 'your-secret-token';
+const APP_PATH = '/path/to/your/app';
+const DEPLOY_SCRIPT = './deploy.sh';
 
 app.post('/webhook', (req, res) => {
   // Verify signature if using secret
@@ -88,14 +91,29 @@ app.post('/webhook', (req, res) => {
     }
   }
   
-  // Pull latest changes and deploy
-  exec('cd /path/to/your/app && git pull origin main && ./deploy.sh', (error, stdout, stderr) => {
-    if (error) {
-      console.error(`Error: ${error}`);
-      return res.status(500).send('Deployment failed');
+  // Pull latest changes using spawn for security
+  const gitPull = spawn('git', ['pull', 'origin', 'main'], { cwd: APP_PATH });
+  
+  gitPull.on('close', (code) => {
+    if (code !== 0) {
+      console.error(`Git pull failed with code ${code}`);
+      return res.status(500).send('Git pull failed');
     }
-    console.log(`Output: ${stdout}`);
-    res.status(200).send('Deployment successful');
+    
+    // Run deployment script
+    const deployScript = spawn(DEPLOY_SCRIPT, [], { 
+      cwd: APP_PATH,
+      shell: false  // Important: prevents command injection
+    });
+    
+    deployScript.on('close', (deployCode) => {
+      if (deployCode !== 0) {
+        console.error(`Deployment failed with code ${deployCode}`);
+        return res.status(500).send('Deployment failed');
+      }
+      console.log('Deployment successful');
+      res.status(200).send('Deployment successful');
+    });
   });
 });
 
@@ -109,9 +127,12 @@ from flask import Flask, request, jsonify
 import hmac
 import hashlib
 import subprocess
+import os
 
 app = Flask(__name__)
 WEBHOOK_SECRET = 'your-secret-token'
+APP_PATH = '/path/to/your/app'
+DEPLOY_SCRIPT = './deploy.sh'
 
 @app.route('/webhook', methods=['POST'])
 def webhook():
@@ -128,15 +149,32 @@ def webhook():
         if not hmac.compare_digest(signature, expected_signature):
             return jsonify({'error': 'Invalid signature'}), 401
     
-    # Pull latest changes and deploy
+    # Pull latest changes - using list of arguments for security
     try:
+        # Git pull with secure argument passing
         subprocess.run(
-            ['sh', '-c', 'cd /path/to/your/app && git pull origin main && ./deploy.sh'],
-            check=True
+            ['git', 'pull', 'origin', 'main'],
+            cwd=APP_PATH,
+            check=True,
+            capture_output=True,
+            text=True
         )
+        
+        # Run deployment script securely
+        subprocess.run(
+            [DEPLOY_SCRIPT],
+            cwd=APP_PATH,
+            check=True,
+            capture_output=True,
+            text=True
+        )
+        
         return jsonify({'status': 'success'}), 200
-    except subprocess.CalledProcessError:
-        return jsonify({'error': 'Deployment failed'}), 500
+    except subprocess.CalledProcessError as e:
+        return jsonify({
+            'error': 'Deployment failed',
+            'details': str(e)
+        }), 500
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=3000)

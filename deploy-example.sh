@@ -87,9 +87,10 @@ deploy() {
     
     # Optional: Build the application
     # Uncomment the following lines if you want to build on the server
+    # Note: Remove --no-daemon flag for better performance with Gradle daemon on servers
     # log "Building application..."
     # chmod +x gradlew
-    # ./gradlew assembleRelease --no-daemon || {
+    # ./gradlew assembleRelease || {
     #     error "Build failed"
     #     exit 1
     # }
