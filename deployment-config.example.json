@@ -1,0 +1,39 @@
+{
+  "webhook": {
+    "url": "https://your-server.com/webhook",
+    "secret": "your-webhook-secret-token",
+    "events": ["push", "pull_request"],
+    "active": true
+  },
+  "server": {
+    "host": "your-server.com",
+    "port": 3000,
+    "deployment_path": "/var/www/lifecare",
+    "git_branch": "main"
+  },
+  "notifications": {
+    "enabled": true,
+    "email": "your-email@example.com",
+    "slack_webhook": "https://hooks.slack.com/services/YOUR/SLACK/WEBHOOK"
+  },
+  "build": {
+    "auto_build": true,
+    "build_command": "./gradlew assembleRelease",
+    "output_path": "app/build/outputs/apk/release"
+  },
+  "instructions": {
+    "setup": [
+      "1. Replace all placeholder values with your actual configuration",
+      "2. Add this configuration to your server deployment script",
+      "3. Configure GitHub webhook in repository settings",
+      "4. Test the webhook using GitHub's 'Recent Deliveries' feature"
+    ],
+    "security": [
+      "1. Always use HTTPS for webhook URLs",
+      "2. Generate a strong secret token for webhook verification",
+      "3. Validate all incoming webhook payloads",
+      "4. Use IP whitelisting if possible",
+      "5. Store secrets in environment variables, not in code"
+    ]
+  }
+}
